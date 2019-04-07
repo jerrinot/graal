@@ -97,8 +97,7 @@ public final class RuntimeReflection {
      * that return a single or a list of fields.
      *
      * @param finalIsWritable for all of the passed fields which are marked {@code final}, indicates
-     *            whether it should be possible to change their value using reflection.
-     *
+     *                        whether it should be possible to change their value using reflection.
      * @since 1.0
      */
     public static void register(boolean finalIsWritable, Field... fields) {
@@ -107,8 +106,7 @@ public final class RuntimeReflection {
 
     /**
      * Makes the provided classes available for reflective instantiation by
-     * {@link Class#newInstance}. This is equivalent to registering the nullary constructors of the
-     * classes.
+     * {@link Class#newInstance}. Class has to have exactly 1 constructor declared.
      *
      * @since 1.0
      */
@@ -118,14 +116,10 @@ public final class RuntimeReflection {
                 throw new IllegalArgumentException("Class " + clazz.getTypeName() + " cannot be instantiated reflectively. It must be a non-abstract instance type.");
             }
 
-            Constructor<?> nullaryConstructor;
-            try {
-                nullaryConstructor = clazz.getDeclaredConstructor();
-            } catch (NoSuchMethodException ex) {
-                throw new IllegalArgumentException("Class " + clazz.getTypeName() + " cannot be instantiated reflectively . It does not have a nullary constructor.");
+            Constructor<?>[] constructors = clazz.getDeclaredConstructors();
+            for (Constructor<?> constructor : constructors) {
+                register(constructor);
             }
-
-            register(nullaryConstructor);
         }
     }
 

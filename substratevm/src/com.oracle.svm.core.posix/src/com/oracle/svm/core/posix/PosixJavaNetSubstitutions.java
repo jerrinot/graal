@@ -598,6 +598,37 @@ final class Target_java_net_PlainDatagramSocketImpl {
     }
 
     @Substitute
+    void join(InetAddress inetaddr, NetworkInterface netIf) throws SocketException {
+        FileDescriptor fdObj = Util_java_net_DatagramSocketImpl.as_Target_java_net_DatagramSocketImpl(this).fd;
+        if (fdObj == null) {
+            throw new SocketException("Socket closed");
+        }
+        int fd = PosixUtils.getFD(fdObj);
+
+        int htonl = NetinetIn.htonl(JavaNetNetUtilMD.getInetAddress_addr(inetaddr));
+
+        CCharPointer index_Pointer = StackValue.get(CCharPointer.class);
+        index_Pointer.write((byte) 0);
+        CIntPointer len_Pointer = StackValue.get(CIntPointer.class);
+        len_Pointer.write(SizeOf.get(CCharPointer.class));
+
+        if (VmPrimsJVM.JVM_GetSockOpt(fd, NetinetIn.IPPROTO_IPV6(), NetinetIn.IPV6_MULTICAST_IF(), index_Pointer, len_Pointer) < 0) {
+            throw new SocketException(PosixUtils.lastErrorString("Error getting socket option"));
+        }
+
+        NetinetIn.ip_mreqn mname = StackValue.get(NetinetIn.ip_mreqn.class);
+        int mname_len;
+        mname.imr_multiaddr().set_s_addr(htonl);
+        mname.imr_address().set_s_addr(0);
+        mname.set_imr_ifindex(index_Pointer.read());
+        mname_len = SizeOf.get(NetinetIn.ip_mreqn.class);
+
+        if (VmPrimsJVM.JVM_SetSockOpt(fd, NetinetIn.IPPROTO_IP(), NetinetIn.IP_ADD_MEMBERSHIP(), (CCharPointer) mname, mname_len) < 0) {
+
+        }
+    }
+
+    @Substitute
     @SuppressWarnings({"static-method", "unused"})
     protected int peek(InetAddress i) throws IOException {
         throw VMError.unsupportedFeature("Unimplemented: java.net.PlainDatagramSocketImpl.peek(InetAddress)");
@@ -1147,6 +1178,7 @@ final class Target_java_net_PlainDatagramSocketImpl {
         if (opt == SocketOptions.IP_MULTICAST_IF || opt == SocketOptions.IP_MULTICAST_IF2) {
             //  1391          setMulticastInterface(env, this, fd, opt, value);
             Util_java_net_PlainDatagramSocketImpl.setMulticastInterface(fd, opt, value);
+            return;
             //  1392          return;
             /* Unreachable. */
             //  1393      }
@@ -1230,13 +1262,21 @@ final class Target_java_net_PlainDatagramSocketImpl {
                 /* Unreachable. */
         }
 
+        WordPointer wordPointer = StackValue.get(WordPointer.class);
+        ((CIntPointer)wordPointer).write(optval);
         //  1456      if (NET_SetSockOpt(fd, level, optname, (const void *)&optval, optlen) < 0) {
-        if (JavaNetNetUtilMD.NET_SetSockOpt(fd, level_Pointer.read(), optname_Pointer.read(), WordFactory.unsigned(optval), optlen) < 0) {
+        if (JavaNetNetUtilMD.NET_SetSockOpt(fd, level_Pointer.read(), optname_Pointer.read(), wordPointer, optlen) < 0) {
             //  1457          NET_ThrowByNameWithLastError(env, JNU_JAVANETPKG "SocketException", "Error setting socket option");
             throw new SocketException(PosixUtils.lastErrorString("Error setting socket option"));
             //  1458          return;
             /* Unreachable. */
         }
+//        if (JavaNetNetUtilMD.NET_SetSockOpt(fd, level_Pointer.read(), optname_Pointer.read(), WordFactory.unsigned(optval), optlen) < 0) {
+//            //  1457          NET_ThrowByNameWithLastError(env, JNU_JAVANETPKG "SocketException", "Error setting socket option");
+//            throw new SocketException(PosixUtils.lastErrorString("Error setting socket option"));
+//            //  1458          return;
+//            /* Unreachable. */
+//        }
     }
     // @formatter:on
 
@@ -2269,7 +2309,7 @@ class Util_java_net_PlainDatagramSocketImpl {
         //  1147
         //  1148      if (JVM_SetSockOpt(fd, IPPROTO_IPV6, IPV6_MULTICAST_IF,
         //  1149                         (const char*)&index, sizeof(index)) < 0) {
-        if (VmPrimsJVM.JVM_SetSockOpt(fd, NetinetIn.IPPROTO_IP(), NetinetIn.IPV6_MULTICAST_IF(), (CCharPointer) index_Pointer, SizeOf.get(CIntPointer.class)) < 0) {
+        if (VmPrimsJVM.JVM_SetSockOpt(fd, NetinetIn.IPPROTO_IPV6(), NetinetIn.IPV6_MULTICAST_IF(), (CCharPointer) index_Pointer, SizeOf.get(CIntPointer.class)) < 0) {
             //  1150          if (errno == EINVAL && index > 0) {
             if (Errno.errno() == Errno.EINVAL() && index_Pointer.read() > 0) {
                 //  1151              JNU_ThrowByName(env, JNU_JAVANETPKG "SocketException",
@@ -2454,11 +2494,12 @@ class Util_java_net_PlainDatagramSocketImpl {
     //  1849  static void setHopLimit(JNIEnv *env, int fd, jint ttl) {
     static void setHopLimit(int fd, int ttl) throws SocketException {
         //  1850      int ittl = (int)ttl;
-        CCharPointer ittl_Pointer = StackValue.get(CCharPointer.class);
-        ittl_Pointer.write((byte) ttl);
+        System.out.println("setHopLimit " + ttl);
+        CIntPointer ittl_Pointer = StackValue.get(CIntPointer.class);
+        ittl_Pointer.write(ttl);
         //  1851      if (JVM_SetSockOpt(fd, IPPROTO_IPV6, IPV6_MULTICAST_HOPS,
         //  1852                         (char*)&ittl, sizeof(ittl)) < 0) {
-        if (Socket.setsockopt(fd, NetinetIn.IPPROTO_IPV6(), NetinetIn.IPV6_MULTICAST_HOPS(), ittl_Pointer, SizeOf.get(CCharPointer.class)) < 0) {
+        if (Socket.setsockopt(fd, NetinetIn.IPPROTO_IPV6(), NetinetIn.IPV6_MULTICAST_HOPS(), ittl_Pointer, SizeOf.get(CIntPointer.class)) < 0) {
             //  1853          NET_ThrowByNameWithLastError(env, JNU_JAVANETPKG "SocketException",
             //  1854                         "Error setting socket option");
             throw new SocketException(PosixUtils.lastErrorString("Error setting socket option"));
@@ -3779,6 +3820,11 @@ final class Target_java_net_NetworkInterface {
     @Substitute
     static boolean isUp0(String name, int ind) throws SocketException {
         return JavaNetNetworkInterface.isUp0(name, ind);
+    }
+
+    @Substitute
+    static boolean isLoopback0(String name, int ind) throws SocketException {
+        return JavaNetNetworkInterface.isLoopback0(name, ind);
     }
 
     // { Do not format quoted code: @formatter:off

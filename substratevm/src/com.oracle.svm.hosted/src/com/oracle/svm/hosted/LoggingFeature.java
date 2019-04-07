@@ -76,7 +76,7 @@ public class LoggingFeature implements Feature {
 
             access.requireAnalysisIteration();
         }
-    }
+    }https://www.vzp.cz/o-nas/nejcasteji-resite
 
     private void registerForReflection(Class<?> clazz) {
         try {

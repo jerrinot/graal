@@ -28,6 +28,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
 import java.nio.charset.Charset;
@@ -427,7 +428,7 @@ abstract class GraphProtocol<Graph, Node, NodeClass, Edges, Block, ResolvedJavaM
             int sizeInBytes = b.length * 4;
             ensureAvailable(sizeInBytes);
             buffer.asIntBuffer().put(b);
-            buffer.position(buffer.position() + sizeInBytes);
+            ((Buffer)buffer).position(buffer.position() + sizeInBytes);
         }
     }
 

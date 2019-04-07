@@ -93,6 +93,9 @@ public class NetinetIn {
     @CConstant
     public static native int IP_MULTICAST_TTL();
 
+    @CConstant
+    public static native int IP_ADD_MEMBERSHIP();
+
     // @formatter:off
     // sys/_types/_sa_family_t.h:typedef __uint8_t      sa_family_t;
     // sys/_types/_in_port_t.h:typedef  __uint16_t      in_port_t;
@@ -171,6 +174,21 @@ public class NetinetIn {
 
         @CFieldAddress
         CCharPointer s6_addr();
+    }
+
+    @CStruct(addStructKeyword = true)
+    public interface ip_mreqn extends PointerBase {
+        @CFieldAddress
+        in_addr imr_multiaddr();
+
+        @CFieldAddress
+        in_addr imr_address();
+
+        @CField
+        int	imr_ifindex();
+
+        @CField
+        void set_imr_ifindex(int index);
     }
 
     // @formatter:off

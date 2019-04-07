@@ -192,6 +192,11 @@ public class JavaNetNetworkInterface {
                 && CTypeConversion.toBoolean(flags & NetIf.IFF_RUNNING());
     }
 
+    static boolean isLoopback0(String name, int ind) throws SocketException {
+        int flags = getFlags0(name);
+        return CTypeConversion.toBoolean(flags & NetIf.IFF_LOOPBACK());
+    }
+
     static int getFlags0(String ifname) throws SocketException {
         if (ifname == null) {
             throw new NullPointerException("network interface name is NULL");
